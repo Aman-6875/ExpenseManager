@@ -4,18 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use Validator;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\ExpenseCategoryRequest;
 use App\Models\Expense;
-use App\Models\ExpenseCategory;
 use App\Traits\ApiResponse;
 use Exception;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 
-class ExpenseCategoryController extends Controller
+class ExpenseController extends Controller
 {
+
     /**
      * Display a listing of the resource.
      *
@@ -25,13 +23,7 @@ class ExpenseCategoryController extends Controller
     use ApiResponse;
     public function index()
     {
-        try {
-
-            $expense_categories = ExpenseCategory::orderBy('id', 'desc')->with('expenses')->get();
-            return $this->successResponse($expense_categories, 'Fetched Successfully', Response::HTTP_OK);
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        //
     }
 
     /**
@@ -43,22 +35,28 @@ class ExpenseCategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|max:255',
+            'expense_category_id' => 'required',
+            'amount' => 'required',
+            'date' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->errorResponse($validator->errors(), Response::HTTP_NOT_ACCEPTABLE);
         }
         try {
             $data = [
-                'title' => $request->title
+                'expense_category_id' => $request->expense_category_id,
+                'amount' => $request->amount,
+                'date' => $request->date,
+                'note' => $request->note,
+                'transaction_medium' => $request->transaction_medium,
             ];
             if ($request->image) {
                 $path = Storage::putFile('ExpenseCategory', $request->image);
                 $data['image'] = asset($path);
             }
-            $expense_category = ExpenseCategory::create($data);
-            return $this->successResponse($data, 'Successfully Created', Response::HTTP_OK);
+            $expense_category = Expense::create($data);
+            return $this->successResponse($data, 'Successfully Created', Response::HTTP_CREATED);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -73,8 +71,8 @@ class ExpenseCategoryController extends Controller
     public function show($id)
     {
         try {
-            $expense_category = ExpenseCategory::with('expenses')->find($id);
-            return $this->successResponse($expense_category, 'Fetched Successfully', Response::HTTP_OK);
+            $expense = Expense::with('expenseCategory')->find($id);
+            return $this->successResponse($expense, 'Fetched Successfully', Response::HTTP_OK);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -90,21 +88,27 @@ class ExpenseCategoryController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|max:255',
+            'expense_category_id' => 'required',
+            'amount' => 'required',
+            'date' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->errorResponse($validator->errors(), Response::HTTP_NOT_ACCEPTABLE);
         }
         try {
             $data = [
-                'title' => $request->title
+                'expense_category_id' => $request->expense_category_id,
+                'amount' => $request->amount,
+                'date' => $request->date,
+                'note' => $request->note,
+                'transaction_medium' => $request->transaction_medium,
             ];
             if ($request->image) {
                 $path = Storage::putFile('ExpenseCategory', $request->image);
                 $data['image'] = asset($path);
             }
-            $expense_category = ExpenseCategory::where('id', $id)->update($data);
+            $expense_category = Expense::where('id', $id)->update($data);
             return $this->successResponse($data, 'Successfully Updated', Response::HTTP_CREATED);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -120,7 +124,7 @@ class ExpenseCategoryController extends Controller
     public function destroy($id)
     {
         try {
-            $expense_category = ExpenseCategory::where('id', $id)->delete();
+            $expense = Expense::where('id', $id)->delete();
             return $this->successResponse(null, 'Deleted Successfully', Response::HTTP_OK);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
